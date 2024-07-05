@@ -421,6 +421,24 @@ class Cutechess:
         return '%s %s %s' % (win_flags, draw_flags, syzygy_flags)
 
     @staticmethod
+    def convert_book_move_counters(book_file):
+    # converts files with complete FENs, leaving others (incl. converted ones) unchanged
+    epds = []
+    with open(book_file, "r") as file:
+        for fen in file:
+            fields = fen.split()
+            if len(fields) == 6 and fields[4].isdigit() and fields[5].isdigit():
+                fields[4] = f"hmvc {fields[4]};"
+                fields[5] = f"fmvn {fields[5]};"
+                epds.append(" ".join(fields))
+            else:
+                return
+
+    with open(book_file, "w") as file:
+        for epd in epds:
+            file.write(epd + "\n")
+            
+    @staticmethod
     def book_settings(config, cutechess_idx):
 
         # DATAGEN creates their own book
@@ -436,6 +454,10 @@ class Cutechess:
         book_name   = config.workload['test']['book']['name']
         book_suffix = book_name.split('.')[-1]
 
+        # Convert FENS to EPDS
+        if book_name.endswith(".epd"):
+        convert_book_move_counters('Books/' + book_name)
+        
         # Start position is determined partially by cutechess index
         pairs = config.workload['distribution']['games-per-cutechess'] // 2
         start = config.workload['test']['book_index'] + cutechess_idx * pairs
